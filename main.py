@@ -1,44 +1,51 @@
-from google import genai
-from google.genai import types
-import config
+from groq import generate_response
 
-client = genai.Client(api_key=config.GEMINI_API_KEY)
-
-def generate_response(prompt, temperature=0.3):
-    try:
-        contents = [types.Content(role="user", parts=[types.Part.from_text(text=prompt)])]
-        config_params = types.GenerateContentConfig(temperature=temperature)
-        response = client.models.generate_content(model="gemini-2.0-flash", contents=contents, config=config_params)
-        return response.text
-    except Exception as e:
-        return f"Error: {str(e)}"
-category = input("Enter a categort (e.g., animal, food, city): ")
-item = input(f"Enter a specific {category} to classify: ")
-print("\n---ZERO-SHOT LEARNING---")
-zero_shot = f"Is {item} a {category}? Answer yes or no."
-print(f"Prompt: {zero_shot}")
-print(f"Response: {generate_response(zero_shot)}")
-print("\n---ONE-SHOT LEARNING---")
-one_shot = f"""Determine if the item belongs to the category.
-
-Example:
+def run_activity():
+    print("ZERO-SHOT, ONE-SHOT & FEW-SHOT LEARNING ACTIVITY")
+    category = input("Enter a category (e.g., animal, food, city): ").strip()
+    item = input(f"Enter a specific {category} to classify: ").strip()
+    if not category or not item:
+        print("Please fill in both fields to run the activity.")
+        return
+    zero_shot = f"Is {item} a {category}? Answer yes or no."
+    print("\n--- ZERO-SHOT LEARNING ---")
+    print(f"Response: {generate_response(zero_shot, temperature=0.3, max_tokens=1024)}")
+    one_shot = f"""Example:
 Category: fruit
-Item: Apple
+Item: apple
 Answer: Yes, apple is a fruit.
 
 Now you try:
 Category: {category}
 Item: {item}
-answer:"""
-print(f"Response: {generate_response(one_shot)}")
+Answer:"""
+    print("\n--- ONE-SHOT LEARNING ---")
+    print(f"Response: {generate_response(one_shot, temperature=0.3, max_tokens=1024)}")
 
-print("\n---FEW-SHOT LEARNING---")
-few_shot = f"""Determine if the item belongs to the category.
-
-Example1:
+    few_shot = f"""Example 1:
 Category: fruit
 Item: apple
 Answer: Yes, apple is a fruit.
 
-Example 2:
-"""
+Now you try:
+Category: {category}
+Item: {item}
+Answer:"""
+    print("\n--- FEW-SHOT LEARNING ---")
+    print(f"Response: {generate_response(few_shot, temperature=0.3, max_tokens=1024)}")
+    creative_prompt = f"""Write a one-sentence story about the given word.
+
+Example 1: Word: moon
+Story: The moon winked at the lovers as they shared their first kiss.
+
+Word: {item}
+Story:"""
+    print("\n--- CREATIVE FEW-SHOT EXAMPLE ---")
+    print(f"Response: {generate_response(creative_prompt, temperature=0.7, max_tokens=1024)}")
+    print("\n--- REFLECTION QUESTIONS ---")
+    print("1. How did the responses differ between zero-shot, one-shot, and few-shot?")
+    print("2. Which approach gave the most helpful response?")
+    print("3. How did the examples influence the model's output?")
+
+if __name__ == "__main__":
+    run_activity()
